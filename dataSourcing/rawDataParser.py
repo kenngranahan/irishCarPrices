@@ -58,7 +58,9 @@ def parseHtmlSrcCode(htmlSrcCode, scrapperConfig):
 
 
 def checkParsedData(extractedData):
-    if extractedData == {}:
+    if 'dealer' not in extractedData:
+        return False
+    elif extractedData['dealer'] == '':
         return False
     return True
 

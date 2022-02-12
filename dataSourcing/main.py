@@ -5,6 +5,7 @@ import irishCarPriceDatabase
 import yaml
 from tqdm import tqdm
 from datetime import datetime
+from datetime import date
 import json
 import cloudscraper
 import random
@@ -13,19 +14,28 @@ import time
 
 def runCarsIrelandScrapper():
 
-    def getCurrentTimeStamp():
-        return datetime.now().replace(microsecond=0).isoformat()
-    scriptStartTS = getCurrentTimeStamp()
+    def _getCurrentTimeStamp():
+        return datetime.now().isoformat()
+
+    def _getCurrentDate():
+        return date.today().isoformat()
+    scriptStartTS = _getCurrentTimeStamp()
 
     cloudscraperConfig = None
     parserConfig = None
     databaseConfig = None
-    with open('parserConfig.yaml', 'r') as f:
+    with open('dataSourcing/parserConfig.yaml', 'r') as f:
         parserConfig = yaml.full_load(f)
-    with open('databaseConfig.yaml', 'r') as f:
+    with open('dataSourcing/databaseConfig.yaml', 'r') as f:
         databaseConfig = yaml.full_load(f)
-    with open('cloudscraperConfig.yaml', 'r') as f:
+    with open('dataSourcing/cloudscraperConfig.yaml', 'r') as f:
         cloudscraperConfig = yaml.full_load(f)
+    with open('dataSourcing/ids.txt', 'r') as f:
+        idSearchSpace = json.loads(f.read())
+
+    idSearchSpace = idSearchSpace[:10]
+    # idSearchSpace = range(2956624, 2973791)
+    # idSearchSpace = irishCarPriceDatabase.selectCarsIrelandLatestId(databaseConfig)
 
     successfulFilters = cloudscraperConfig['successfulFilters']
     minimumCentisecondsBetweenRequests = cloudscraperConfig['minimumCentisecondsBetweenRequests']
@@ -39,46 +49,46 @@ def runCarsIrelandScrapper():
     scraper = cloudscraper.create_scraper(browser=browser)
     scraperMetaData = {}
 
-    with open('ids.txt', 'r') as f:
-        idSearchSpace = json.loads(f.read())
-    # idSearchSpace = range(2956624, 2973791)
-    # idSearchSpace = irishCarPriceDatabase.selectCarsIrelandLatestId(databaseConfig)
-    idSearchSpace = idSearchSpace[:5]
-
     for pageId in tqdm(idSearchSpace):
         url = 'https://www.carsireland.ie/'+str(pageId)
 
-        requestStartTS = getCurrentTimeStamp()
+        requestStartTS = _getCurrentTimeStamp()
         htmlSrcCode = scraper.get(url).text
-        requestEndTS = getCurrentTimeStamp()
+        requestEndTS = _getCurrentTimeStamp()
         timeToWaitForNextRequest = random.choice(rangeOfTimesToWait)
 
-        scraperMetaData['scriptStartTS'] = scriptStartTS
-        scraperMetaData['pageId'] = pageId
-        scraperMetaData['requestStartTS'] = requestStartTS
-        scraperMetaData['requestEndTS'] = requestEndTS
-        scraperMetaData['timeToWaitForNextRequest'] = timeToWaitForNextRequest
+        hitFirewall = False
+        pageExists = True
+        if 'Access denied' in htmlSrcCode:
+            hitFirewall = True
+        elif 'Page not found - CarsIreland.ie' in htmlSrcCode:
+            pageExists = False
+
+        scraperMetaData['script_start_ts'] = scriptStartTS
+        scraperMetaData['page_id'] = pageId
+        scraperMetaData['request_start_ts'] = requestStartTS
+        scraperMetaData['request_end_ts'] = requestEndTS
+        scraperMetaData['time_to_wait_for_next_request'] = timeToWaitForNextRequest
+        scraperMetaData['hit_firewall'] = hitFirewall
+        scraperMetaData['page_exists'] = pageExists
         for element in browser:
             scraperMetaData[element] = browser[element]
+        irishCarPriceDatabase.insertCarsIrelandScraperMetaData(
+            scraperMetaData, databaseConfig)
 
-        with open(pageId, 'w') as f:
-            f.write(json.dumps(htmlSrcCode))
-        htmlSrcCode = rawDataParser.parseHtmlSrcCode(
-            htmlSrcCode, parserConfig)
-
-        if False:
-            if rawDataParser.checkParsedData(htmlSrcCode):
-                htmlSrcCode = rawDataParser.confirmDataAttr(
-                    htmlSrcCode, parserConfig)
-                htmlSrcCode['download_date'] = downloadDate
-                htmlSrcCode['id'] = pageId
+        with open('page.html', 'w') as f:
+            f.write(htmlSrcCode)
+        if (hitFirewall is False) and (pageExists is True):
+            extractedData = rawDataParser.parseHtmlSrcCode(
+                htmlSrcCode, parserConfig)
+            if rawDataParser.checkParsedData(extractedData):
+                extractedData = rawDataParser.confirmDataAttr(
+                    extractedData, parserConfig)
+                extractedData['download_date'] = _getCurrentDate()
+                extractedData['id'] = pageId
                 irishCarPriceDatabase.insertCarsIrelandScrappedData(
-                    htmlSrcCode, databaseConfig)
+                    extractedData, databaseConfig)
         time.sleep(int(timeToWaitForNextRequest/100))
-    # rawData = irishCarPriceDatabase.selectCarsIrelandScrappedData(
-    #     downloadDate, databaseConfig)
-    # cleanData = dataProcesser.cleanRawData(rawData, databaseConfig)
-    # irishCarPriceDatabase.insertCarsIrelandCleanData(cleanData, databaseConfig)
 
 
 if __name__ == '__main__':

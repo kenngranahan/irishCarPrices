@@ -5,7 +5,7 @@ DSN:
   host: '127.0.0.1'
   port: '5432'
   connect_timeout: 5
-carsIrelandScrappedDataSchema:
+carsIrelandScrappedData:
 - !!python/tuple [vehicle_year, text]
 - !!python/tuple [vehicle, text]
 - !!python/tuple [transmission, text]
@@ -25,7 +25,7 @@ carsIrelandScrappedDataSchema:
 - !!python/tuple [color, text]
 - !!python/tuple [body, text]
 - !!python/tuple [id, text]
-carsIrelandCleanDataSchema:
+carsIrelandCleanData:
 - !!python/tuple [dealer, text]
 - !!python/tuple [county, text]
 - !!python/tuple [make, text]
@@ -47,6 +47,18 @@ carsIrelandCleanDataSchema:
 - !!python/tuple [nct_year, numeric]
 - !!python/tuple [download_date, date]
 - !!python/tuple [id, text]
+carsIrelandScraperMetaData:
+- !!python/tuple [script_start_ts, timestamp]
+- !!python/tuple [page_id, text]
+- !!python/tuple [request_start_ts, timestamp]
+- !!python/tuple [request_end_ts, timestamp]
+- !!python/tuple [time_to_wait_for_next_request, numeric]
+- !!python/tuple [browser, text]
+- !!python/tuple [desktop, boolean]
+- !!python/tuple [mobile, boolean]
+- !!python/tuple [platform, text]
+- !!python/tuple [hit_firewall, boolean]
+- !!python/tuple [page_exists, boolean]
 testConfig:
   carsIrelandScrappedData: dataSourcing/databaseTestCases/carsIrelandScrappedData/
   carsIrelandCleanData: dataSourcing/databaseTestCases/carsIrelandCleanData/

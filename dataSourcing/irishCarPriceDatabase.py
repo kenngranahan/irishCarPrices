@@ -13,36 +13,63 @@ def _connectToDatabase(databaseConfig):
     return conn
 
 
-def insertCarsIrelandScrappedData(scrappedData, databaseConfig):
-    conn = _connectToDatabase(databaseConfig)
-
+def _makeInsertQuery(dataDict, databaseConfig, tableName):
     columnsToInsert = ''
     valuesToInsert = ''
-    for columnName, columnType in databaseConfig['carsIrelandScrappedDataSchema']:
-        value = scrappedData[columnName]
+    for columnName, _ in databaseConfig[tableName]:
+        value = dataDict[columnName]
 
         if columnsToInsert == '':
             columnsToInsert = columnName
-            if value == "":
-                valuesToInsert = 'NULL'
-            elif columnType == 'numeric':
-                valuesToInsert = str(value)
-            else:
-                valuesToInsert = '\''+str(value)+'\''
+            if isinstance(value, object):
+                if value == '':
+                    valuesToInsert = 'NULL'
+                else:
+                    valuesToInsert = '\''+str(value)+'\''
+            elif isinstance(value, float):
+                if np.isnan(value):
+                    valuesToInsert = 'NULL'
+                else:
+                    valuesToInsert = str(value)
+            elif isinstance(value, bool):
+                if value is True:
+                    valuesToInsert = '1'
+                elif value is False:
+                    valuesToInsert = '0'
+                else:
+                    valuesToInsert = 'NULL'
         else:
             columnsToInsert = columnsToInsert + ','+columnName
-            if value == "":
-                valuesToInsert = valuesToInsert + ',NULL'
-            elif columnType == 'numeric':
-                valuesToInsert = valuesToInsert + ','+str(value)
-            else:
-                valuesToInsert = valuesToInsert + ',\''+str(value)+'\''
+            if isinstance(value, object):
+                if value == '':
+                    valuesToInsert = valuesToInsert + ',NULL'
+                else:
+                    valuesToInsert = valuesToInsert + ',\''+str(value)+'\''
+            elif isinstance(value, float):
+                if np.isnan(value):
+                    valuesToInsert = valuesToInsert + ',NULL'
+                else:
+                    valuesToInsert = valuesToInsert + ','+str(value)
+            elif isinstance(value, bool):
+                if value is True:
+                    valuesToInsert = '1'
+                elif value is False:
+                    valuesToInsert = '0'
+                else:
+                    valuesToInsert = 'NULL'
 
+    query = 'INSERT INTO public."' + tableName + '"(' + \
+        columnsToInsert+') VALUES ('+valuesToInsert+');'
+    return query
+
+
+def insertCarsIrelandScrappedData(scrappedData, databaseConfig):
+    conn = _connectToDatabase(databaseConfig)
+    insertQuery = _makeInsertQuery(
+        scrappedData, databaseConfig, 'carsIrelandScrappedData')
     with conn:
         with conn.cursor() as cursor:
-            query = 'INSERT INTO public."carsIrelandScrappedData"(' + \
-                columnsToInsert+') VALUES ('+valuesToInsert+');'
-            cursor.execute(query)
+            cursor.execute(insertQuery)
             conn.commit()
         return None
 
@@ -58,7 +85,7 @@ def selectCarsIrelandScrappedData(downloadDate, databaseConfig):
             id = None
             for record in cursor:
                 recordData = {}
-                for valueQueried, (columnName, _) in zip(record, databaseConfig['carsIrelandScrappedDataSchema']):
+                for valueQueried, (columnName, _) in zip(record, databaseConfig['carsIrelandScrappedData']):
                     recordData[columnName] = valueQueried
                     if columnName == 'id':
                         id = valueQueried
@@ -78,36 +105,11 @@ def deleteCarsIrelandScrappedData(downloadDate, databaseConfig):
 
 def insertCarsIrelandCleanData(cleanData, databaseConfig):
     conn = _connectToDatabase(databaseConfig)
-
-    columnsToInsert = ''
-    valuesToInsert = ''
-    for columnName, columnType in databaseConfig['carsIrelandCleanDataSchema']:
-        value = cleanData[columnName]
-
-        if columnsToInsert == '':
-            columnsToInsert = columnName
-            if isinstance(value, object):
-                valuesToInsert = '\''+str(value)+'\''
-            elif isinstance(value, float):
-                if np.isnan(value):
-                    valuesToInsert = 'NULL'
-                else:
-                    valuesToInsert = str(value)
-        else:
-            columnsToInsert = columnsToInsert + ','+columnName
-            if isinstance(value, object):
-                valuesToInsert = valuesToInsert + ',\''+str(value)+'\''
-            elif isinstance(value, float):
-                if np.isnan(value):
-                    valuesToInsert = valuesToInsert + ',NULL'
-                else:
-                    valuesToInsert = valuesToInsert + ','+str(value)
-
+    insertQuery = _makeInsertQuery(
+        cleanData, databaseConfig, 'carsIrelandCleanData')
     with conn:
         with conn.cursor() as cursor:
-            query = 'INSERT INTO public."carsIrelandCleanData"(' + \
-                columnsToInsert+') VALUES ('+valuesToInsert+');'
-            cursor.execute(query)
+            cursor.execute(insertQuery)
             conn.commit()
         return None
 
@@ -123,7 +125,7 @@ def selectCarsIrelandCleanData(downloadDate, databaseConfig):
             id = None
             for record in cursor:
                 recordData = {}
-                for valueQueried, (columnName, columnType) in zip(record, databaseConfig['carsIrelandCleanDataSchema']):
+                for valueQueried, (columnName, columnType) in zip(record, databaseConfig['carsIrelandCleanData']):
                     if valueQueried == 'nan':
                         if columnType == 'numeric':
                             recordData[columnName] = np.nan
@@ -156,3 +158,14 @@ def selectCarsIrelandLatestId(databaseConfig):
     with conn.cursor() as cursor:
         ids = cursor.execute(query)
     return ids
+
+
+def insertCarsIrelandScraperMetaData(scraperMetaData, databaseConfig):
+    conn = _connectToDatabase(databaseConfig)
+    insertQuery = _makeInsertQuery(
+        scraperMetaData, databaseConfig, 'carsIrelandScraperMetaData')
+    with conn:
+        with conn.cursor() as cursor:
+            cursor.execute(insertQuery)
+            conn.commit()
+        return None
