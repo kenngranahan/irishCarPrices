@@ -1,0 +1,14 @@
+body {
+  background-color: white;
+}
+h1 {
+  color: white;
+}
+p {
+  color: white;
+}
+
+myDiv {
+  width: 600px;
+  height: 250px;
+}

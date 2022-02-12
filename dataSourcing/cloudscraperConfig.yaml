@@ -1,0 +1,77 @@
+minimumCentisecondsBetweenRequests: 50
+maximumCentiecondsBetweenRequests: 3000
+timeIncrement: 1
+successfulFilters:
+  1.2.58:
+  - &id001
+    browser: firefox
+    desktop: true
+    mobile: true
+    platform: windows
+  - &id002
+    browser: firefox
+    desktop: false
+    mobile: true
+    platform: android
+  - &id003
+    browser: firefox
+    desktop: true
+    mobile: false
+    platform: linux
+  - &id004
+    browser: firefox
+    desktop: true
+    mobile: false
+    platform: windows
+  - &id005
+    browser: firefox
+    desktop: true
+    mobile: false
+    platform: darwin
+supportedFilters:
+  1.2.58:
+  - browser: chrome
+    desktop: true
+    mobile: true
+    platform: linux
+  - browser: chrome
+    desktop: true
+    mobile: true
+    platform: windows
+  - browser: chrome
+    desktop: true
+    mobile: true
+    platform: darwin
+  - browser: chrome
+    desktop: true
+    mobile: true
+    platform: android
+  - browser: chrome
+    desktop: true
+    mobile: true
+    platform: ios
+  - browser: chrome
+    desktop: false
+    mobile: true
+    platform: android
+  - browser: chrome
+    desktop: false
+    mobile: true
+    platform: ios
+  - browser: chrome
+    desktop: true
+    mobile: false
+    platform: linux
+  - browser: chrome
+    desktop: true
+    mobile: false
+    platform: windows
+  - browser: chrome
+    desktop: true
+    mobile: false
+    platform: darwin
+  - *id001
+  - *id002
+  - *id003
+  - *id004
+  - *id005

@@ -1,0 +1,53 @@
+DSN:
+  dbname: irishCarPrices
+  user: 'postgres'
+  password: 'Ju$tK1dd1ng'
+  host: '127.0.0.1'
+  port: '5432'
+  connect_timeout: 5
+carsIrelandScrappedDataSchema:
+- !!python/tuple [vehicle_year, text]
+- !!python/tuple [vehicle, text]
+- !!python/tuple [transmission, text]
+- !!python/tuple [tax, text]
+- !!python/tuple [price, text]
+- !!python/tuple [owners, text]
+- !!python/tuple [nct, text]
+- !!python/tuple [mpg, text]
+- !!python/tuple [mileage, text]
+- !!python/tuple [county, text]
+- !!python/tuple [last_updated, text]
+- !!python/tuple [fuel, text]
+- !!python/tuple [engine, text]
+- !!python/tuple [download_date, text]
+- !!python/tuple [doors, text]
+- !!python/tuple [dealer, text]
+- !!python/tuple [color, text]
+- !!python/tuple [body, text]
+- !!python/tuple [id, text]
+carsIrelandCleanDataSchema:
+- !!python/tuple [dealer, text]
+- !!python/tuple [county, text]
+- !!python/tuple [make, text]
+- !!python/tuple [model, text]
+- !!python/tuple [vehicle_year, numeric]
+- !!python/tuple [mileage, numeric]
+- !!python/tuple [last_updated, text]
+- !!python/tuple [price, numeric]
+- !!python/tuple [transmission, text]
+- !!python/tuple [engine, numeric]
+- !!python/tuple [body, text]
+- !!python/tuple [fuel, text]
+- !!python/tuple [doors, numeric]
+- !!python/tuple [mpg, numeric]
+- !!python/tuple [owners, numeric]
+- !!python/tuple [color, text]
+- !!python/tuple [tax, numeric]
+- !!python/tuple [nct_month, text]
+- !!python/tuple [nct_year, numeric]
+- !!python/tuple [download_date, date]
+- !!python/tuple [id, text]
+testConfig:
+  carsIrelandScrappedData: dataSourcing/databaseTestCases/carsIrelandScrappedData/
+  carsIrelandCleanData: dataSourcing/databaseTestCases/carsIrelandCleanData/
+  downloadDate: '2021-12-30'

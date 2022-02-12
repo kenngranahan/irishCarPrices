@@ -1,0 +1,269 @@
+inputPath:
+  dataAggregator: dataSourcing/scrappedData/
+outputPath:
+  dataAggregator: dataSourcing/finalData/
+  rawDataProcessor: dataSourcing/scrappedData/
+testPath: dataSourcing/scrapperTestCases/
+confirmDataAttr:
+  body:
+  - Hatchback
+  - Saloon
+  - SUV
+  - MPV
+  - Estate
+  - Other
+  - Van
+  - Coupe
+  - Pickup
+  - Convertible
+  color:
+  - Black
+  - Grey
+  - White
+  - Blue
+  - Silver
+  - Red
+  - Brown
+  - Bronze
+  - Green
+  - Orange
+  - Wine
+  fuel:
+  - Petrol
+  - Diesel
+  - Petrol Hybrid
+  - Electric
+  - Hybrid
+  - Other
+  - Bio gasPetrol Plug-in Hybrid
+  - Petrol Plug-in Hybrid
+  - Diesel Hybrid
+  - Diesel Plug-in Hybrid
+  transmission:
+  - Manual
+  - Automatic
+  - Other
+  - CVT
+  - Semi-auto
+featureExtraction:
+  makes:
+  - toyota
+  - mitsubishi
+  - nissan
+  - ford
+  - hyundai
+  - mercedes-benz
+  - renault
+  - vauxhall
+  - smart
+  - volkswagen
+  - skoda
+  - opel
+  - bmw
+  - lexus
+  - fiat
+  - audi
+  - seat
+  - dacia
+  - kia
+  - citroen
+  - daihatsu
+  - mazda
+  - landrover
+  - volvo
+  - peugeot
+  - suzuki
+  - honda
+  - jaguar
+  - mini
+  - suzuki
+  - saab
+  - porsche
+  - alfaromeo
+  - jeep
+  - subaru
+  - chevrole
+  - ssangyong
+  - cupra
+  - isuzu
+  - bentley
+  - maserati
+  - abarth
+  - dsds
+parseHtmlSrcCode:
+- - <div class="vehicle__information-dealer">
+  - <div class="vehicle__share">
+  - keep
+  - true
+  - false
+  - ''
+- - <div class="vehicle__information-dealer">
+  - </div>
+  - keep
+  - false
+  - false
+  - dealer
+- - <div class="vehicle__information-location">
+  - </div>
+  - keep
+  - false
+  - false
+  - county
+- - <h1 class="vehicle__title">
+  - </h1>
+  - keep
+  - false
+  - false
+  - vehicle
+- - <span class="vehicle__information-details-about-year">
+  - </span>
+  - keep
+  - false
+  - false
+  - vehicle_year
+- - <div class="vehicle__information-details-about-mileage">
+  - </div>
+  - keep
+  - false
+  - false
+  - mileage
+- - <div class="vehicle__information-details-about-update">
+  - </div>
+  - keep
+  - false
+  - false
+  - last_updated
+- - <h3 class="visually-hidden">Price</h3><p>
+  - </p>
+  - keep
+  - false
+  - false
+  - price
+- - <div class="vehicle__information-dealer">
+  - <span class="vehicle__information-technical-item-icon">
+  - remove
+  - true
+  - false
+  - ''
+- - </span>
+  - </div>
+  - keep
+  - false
+  - false
+  - transmission
+- - </span>
+  - </div>
+  - remove
+  - true
+  - true
+  - ''
+- - </span>
+  - </div>
+  - keep
+  - false
+  - false
+  - engine
+- - </span>
+  - </div>
+  - remove
+  - true
+  - true
+  - ''
+- - </span>
+  - </div>
+  - keep
+  - false
+  - false
+  - body
+- - </span>
+  - </div>
+  - remove
+  - true
+  - true
+  - ''
+- - </span>
+  - </div>
+  - keep
+  - false
+  - false
+  - fuel
+- - </span>
+  - </div>
+  - remove
+  - true
+  - true
+  - ''
+- - </span>
+  - </div>
+  - keep
+  - false
+  - false
+  - doors
+- - </span>
+  - </div>
+  - remove
+  - true
+  - true
+  - ''
+- - </span>
+  - </div>
+  - keep
+  - false
+  - false
+  - mpg
+- - </span>
+  - </div>
+  - remove
+  - true
+  - true
+  - ''
+- - </span>
+  - </div>
+  - keep
+  - false
+  - false
+  - owners
+- - </span>
+  - </div>
+  - remove
+  - true
+  - true
+  - ''
+- - </span>
+  - </div>
+  - keep
+  - false
+  - false
+  - color
+- - </span>
+  - </div>
+  - remove
+  - true
+  - true
+  - ''
+- - </span>
+  - </div>
+  - keep
+  - false
+  - false
+  - tax
+- - </span>
+  - </div>
+  - remove
+  - true
+  - true
+  - ''
+- - </span>
+  - </div>
+  - keep
+  - false
+  - false
+  - nct
+testConfig:
+  '1646849': dataSourcing/scrapperTestCases/1646849/
+  '2973707': dataSourcing/scrapperTestCases/2973707/
+  '2973737': dataSourcing/scrapperTestCases/2973737/
+  '2973782': dataSourcing/scrapperTestCases/2973782/
+  '2979515': dataSourcing/scrapperTestCases/2979515/
+  htmlParser: dataSourcing/scrapperTestCases/htmlParser/
+  scrapedData: dataSourcing/scrapperTestCases/scrapedData/
