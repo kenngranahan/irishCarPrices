@@ -24,7 +24,7 @@ carsIrelandScrappedData:
 - !!python/tuple [dealer, text]
 - !!python/tuple [color, text]
 - !!python/tuple [body, text]
-- !!python/tuple [id, text]
+- !!python/tuple [page_id, text]
 carsIrelandCleanData:
 - !!python/tuple [dealer, text]
 - !!python/tuple [county, text]
@@ -46,7 +46,7 @@ carsIrelandCleanData:
 - !!python/tuple [nct_month, text]
 - !!python/tuple [nct_year, numeric]
 - !!python/tuple [download_date, date]
-- !!python/tuple [id, text]
+- !!python/tuple [page_id, text]
 carsIrelandScraperMetaData:
 - !!python/tuple [script_start_ts, timestamp]
 - !!python/tuple [page_id, text]

@@ -1,5 +1,5 @@
 minimumCentisecondsBetweenRequests: 50
-maximumCentiecondsBetweenRequests: 3000
+maximumCentiecondsBetweenRequests: 400
 timeIncrement: 1
 successfulFilters:
   1.2.58:

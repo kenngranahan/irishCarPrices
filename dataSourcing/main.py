@@ -12,7 +12,7 @@ import random
 import time
 
 
-def runCarsIrelandScrapper():
+def runCarsIrelandScrapper(idSearchSpace):
 
     def _getCurrentTimeStamp():
         return datetime.now().isoformat()
@@ -24,18 +24,12 @@ def runCarsIrelandScrapper():
     cloudscraperConfig = None
     parserConfig = None
     databaseConfig = None
-    with open('dataSourcing/parserConfig.yaml', 'r') as f:
+    with open('dataSourcing/configs/parserConfig.yaml', 'r') as f:
         parserConfig = yaml.full_load(f)
-    with open('dataSourcing/databaseConfig.yaml', 'r') as f:
+    with open('dataSourcing/configs/databaseConfig.yaml', 'r') as f:
         databaseConfig = yaml.full_load(f)
-    with open('dataSourcing/cloudscraperConfig.yaml', 'r') as f:
+    with open('dataSourcing/configs/cloudscraperConfig.yaml', 'r') as f:
         cloudscraperConfig = yaml.full_load(f)
-    with open('dataSourcing/ids.txt', 'r') as f:
-        idSearchSpace = json.loads(f.read())
-
-    idSearchSpace = idSearchSpace[:10]
-    # idSearchSpace = range(2956624, 2973791)
-    # idSearchSpace = irishCarPriceDatabase.selectCarsIrelandLatestId(databaseConfig)
 
     successfulFilters = cloudscraperConfig['successfulFilters']
     minimumCentisecondsBetweenRequests = cloudscraperConfig['minimumCentisecondsBetweenRequests']
@@ -49,7 +43,7 @@ def runCarsIrelandScrapper():
     scraper = cloudscraper.create_scraper(browser=browser)
     scraperMetaData = {}
 
-    for pageId in tqdm(idSearchSpace):
+    for pageId in idSearchSpace:
         url = 'https://www.carsireland.ie/'+str(pageId)
 
         requestStartTS = _getCurrentTimeStamp()
@@ -76,8 +70,6 @@ def runCarsIrelandScrapper():
         irishCarPriceDatabase.insertCarsIrelandScraperMetaData(
             scraperMetaData, databaseConfig)
 
-        with open('page.html', 'w') as f:
-            f.write(htmlSrcCode)
         if (hitFirewall is False) and (pageExists is True):
             extractedData = rawDataParser.parseHtmlSrcCode(
                 htmlSrcCode, parserConfig)
@@ -85,11 +77,30 @@ def runCarsIrelandScrapper():
                 extractedData = rawDataParser.confirmDataAttr(
                     extractedData, parserConfig)
                 extractedData['download_date'] = _getCurrentDate()
-                extractedData['id'] = pageId
+                extractedData['page_id'] = pageId
                 irishCarPriceDatabase.insertCarsIrelandScrappedData(
                     extractedData, databaseConfig)
         time.sleep(int(timeToWaitForNextRequest/100))
+    scraper.close()
 
 
 if __name__ == '__main__':
-    runCarsIrelandScrapper()
+
+    with open('dataSourcing/idToSearch.txt', 'r') as f:
+        idsToSearch = json.loads(f.read())
+
+    with open('dataSourcing/idSearched.txt', 'r') as f:
+        idSearched = json.loads(f.read())
+
+    idsSubListLen = 10
+    numSubList = int(len(idsToSearch)/idsSubListLen)
+
+    for idx in tqdm(range(numSubList-1)):
+        startIdx = idx*idsSubListLen
+        endIdx = (idx+1)*idsSubListLen
+        subList = idsToSearch[startIdx:endIdx]
+        if subList not in idSearched:
+            runCarsIrelandScrapper(subList)
+            idSearched.append(subList)
+            with open('dataSourcing/idSearched.txt', 'w') as f:
+                f.write(json.dumps(idSearched))
