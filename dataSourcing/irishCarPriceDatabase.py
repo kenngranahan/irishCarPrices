@@ -38,6 +38,8 @@ def _makeInsertQuery(dataDict, databaseConfig, tableName):
                     valuesToInsert = '0'
                 else:
                     valuesToInsert = 'NULL'
+            elif value is None:
+                valuesToInsert = 'NULL'
         else:
             columnsToInsert = columnsToInsert + ','+columnName
             if isinstance(value, object):
@@ -52,11 +54,13 @@ def _makeInsertQuery(dataDict, databaseConfig, tableName):
                     valuesToInsert = valuesToInsert + ','+str(value)
             elif isinstance(value, bool):
                 if value is True:
-                    valuesToInsert = '1'
+                    valuesToInsert = valuesToInsert + ',1'
                 elif value is False:
-                    valuesToInsert = '0'
+                    valuesToInsert = valuesToInsert + ',0'
                 else:
-                    valuesToInsert = 'NULL'
+                    valuesToInsert = valuesToInsert + ',NULL'
+            elif value is None:
+                valuesToInsert = valuesToInsert + ',NULL'
 
     query = 'INSERT INTO public."' + tableName + '"(' + \
         columnsToInsert+') VALUES ('+valuesToInsert+');'
@@ -87,7 +91,7 @@ def selectCarsIrelandScrappedData(downloadDate, databaseConfig):
                 recordData = {}
                 for valueQueried, (columnName, _) in zip(record, databaseConfig['carsIrelandScrappedData']):
                     recordData[columnName] = valueQueried
-                    if columnName == 'id':
+                    if columnName == 'page_id':
                         id = valueQueried
                 queriedData[id] = recordData
             return queriedData
@@ -105,13 +109,17 @@ def deleteCarsIrelandScrappedData(downloadDate, databaseConfig):
 
 def insertCarsIrelandCleanData(cleanData, databaseConfig):
     conn = _connectToDatabase(databaseConfig)
-    insertQuery = _makeInsertQuery(
-        cleanData, databaseConfig, 'carsIrelandCleanData')
     with conn:
-        with conn.cursor() as cursor:
-            cursor.execute(insertQuery)
-            conn.commit()
-        return None
+        for pageId in cleanData:
+            pageData = cleanData[pageId]
+            pageData['page_id'] = pageId
+            insertQuery = _makeInsertQuery(
+                pageData, databaseConfig, 'carsIrelandCleanData')
+
+            with conn.cursor() as cursor:
+                cursor.execute(insertQuery)
+        conn.commit()
+    return None
 
 
 def selectCarsIrelandCleanData(downloadDate, databaseConfig):
@@ -152,9 +160,11 @@ def deleteCarsIrelandCleanData(downloadDate, databaseConfig):
             return None
 
 
-def selectCarsIrelandLatestId(databaseConfig):
+def selectCarsIrelandRecentIds(databaseConfig, startDate, endDate):
     conn = _connectToDatabase(databaseConfig)
-    query = 'SELECT Id FROM public."carsIrelandCleanData" WHERE download_date = MAX(download_date)'
+    query = 'SELECT page_id FROM public."carsIrelandScrappedData" \
+             WHERE page_exists = True \
+             AND script_start_ts BETWEEN \'' + startDate + '\' AND \'' + endDate + '\';'
     with conn.cursor() as cursor:
         ids = cursor.execute(query)
     return ids

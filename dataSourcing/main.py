@@ -12,7 +12,7 @@ import random
 import time
 
 
-def runCarsIrelandScrapper(idSearchSpace):
+def runCarsIrelandScrapper(idSearchSpace, cloudscraperConfig, parserConfig, databaseConfig):
 
     def _getCurrentTimeStamp():
         return datetime.now().isoformat()
@@ -20,16 +20,6 @@ def runCarsIrelandScrapper(idSearchSpace):
     def _getCurrentDate():
         return date.today().isoformat()
     scriptStartTS = _getCurrentTimeStamp()
-
-    cloudscraperConfig = None
-    parserConfig = None
-    databaseConfig = None
-    with open('dataSourcing/configs/parserConfig.yaml', 'r') as f:
-        parserConfig = yaml.full_load(f)
-    with open('dataSourcing/configs/databaseConfig.yaml', 'r') as f:
-        databaseConfig = yaml.full_load(f)
-    with open('dataSourcing/configs/cloudscraperConfig.yaml', 'r') as f:
-        cloudscraperConfig = yaml.full_load(f)
 
     successfulFilters = cloudscraperConfig['successfulFilters']
     minimumCentisecondsBetweenRequests = cloudscraperConfig['minimumCentisecondsBetweenRequests']
@@ -84,11 +74,29 @@ def runCarsIrelandScrapper(idSearchSpace):
     scraper.close()
 
 
+def runCarsIrelandCleaner(downloadDate, databaseConfig):
+    scrappedData = irishCarPriceDatabase.selectCarsIrelandScrappedData(
+        downloadDate, databaseConfig)
+    print(scrappedData)
+    cleanData = dataProcesser.cleanRawData(scrappedData)
+    irishCarPriceDatabase.insertCarsIrelandCleanData(cleanData, databaseConfig)
+
+
 if __name__ == '__main__':
 
+    cloudscraperConfig = None
+    parserConfig = None
+    databaseConfig = None
+    with open('dataSourcing/configs/parserConfig.yaml', 'r') as f:
+        parserConfig = yaml.full_load(f)
+    with open('dataSourcing/configs/databaseConfig.yaml', 'r') as f:
+        databaseConfig = yaml.full_load(f)
+    with open('dataSourcing/configs/cloudscraperConfig.yaml', 'r') as f:
+        cloudscraperConfig = yaml.full_load(f)
+
+    # runCarsIrelandCleaner('2022-02-14', databaseConfig)
     with open('dataSourcing/idToSearch.txt', 'r') as f:
         idsToSearch = json.loads(f.read())
-
     with open('dataSourcing/idSearched.txt', 'r') as f:
         idSearched = json.loads(f.read())
 
@@ -100,7 +108,8 @@ if __name__ == '__main__':
         endIdx = (idx+1)*idsSubListLen
         subList = idsToSearch[startIdx:endIdx]
         if subList not in idSearched:
-            runCarsIrelandScrapper(subList)
+            runCarsIrelandScrapper(
+                subList, cloudscraperConfig, parserConfig, databaseConfig)
             idSearched.append(subList)
             with open('dataSourcing/idSearched.txt', 'w') as f:
                 f.write(json.dumps(idSearched))
