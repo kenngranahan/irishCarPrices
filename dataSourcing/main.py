@@ -4,7 +4,7 @@ import dataProcesser
 import irishCarPriceDatabase
 import yaml
 from tqdm import tqdm
-from datetime import datetime
+from datetime import datetime, timedelta
 from datetime import date
 import json
 import cloudscraper
@@ -77,9 +77,11 @@ def runCarsIrelandScrapper(idSearchSpace, cloudscraperConfig, parserConfig, data
 def runCarsIrelandCleaner(downloadDate, databaseConfig):
     scrappedData = irishCarPriceDatabase.selectCarsIrelandScrappedData(
         downloadDate, databaseConfig)
-    print(scrappedData)
-    cleanData = dataProcesser.cleanRawData(scrappedData)
-    irishCarPriceDatabase.insertCarsIrelandCleanData(cleanData, databaseConfig)
+    if scrappedData != {}:
+        cleanData = dataProcesser.cleanRawData(scrappedData)
+        irishCarPriceDatabase.insertCarsIrelandCleanData(
+            cleanData, databaseConfig)
+    return None
 
 
 if __name__ == '__main__':
@@ -94,22 +96,41 @@ if __name__ == '__main__':
     with open('dataSourcing/configs/cloudscraperConfig.yaml', 'r') as f:
         cloudscraperConfig = yaml.full_load(f)
 
-    # runCarsIrelandCleaner('2022-02-14', databaseConfig)
-    with open('dataSourcing/idToSearch.txt', 'r') as f:
-        idsToSearch = json.loads(f.read())
-    with open('dataSourcing/idSearched.txt', 'r') as f:
-        idSearched = json.loads(f.read())
+    # Weeks are assumed to start on Monday and end on Sunday
+    currentDate = date.today()
+    thisWeekStartDate = currentDate - timedelta(days=currentDate.weekday())
+    thisWeekEndDate = currentDate + timedelta(days=(6-currentDate.weekday()))
 
-    idsSubListLen = 10
-    numSubList = int(len(idsToSearch)/idsSubListLen)
+    lastWeekStartDate = currentDate - timedelta(days=(7+currentDate.weekday()))
+    lastWeekEndDate = currentDate - timedelta(days=(1+currentDate.weekday()))
 
-    for idx in tqdm(range(numSubList-1)):
-        startIdx = idx*idsSubListLen
-        endIdx = (idx+1)*idsSubListLen
-        subList = idsToSearch[startIdx:endIdx]
-        if subList not in idSearched:
+    idsToSearch = irishCarPriceDatabase.selectCarsIrelandIdsDownloaded(
+        databaseConfig, lastWeekStartDate, lastWeekEndDate + timedelta(days=1))
+    if idsToSearch != []:
+        idsAddedToWebsite = [
+            max(idsToSearch)+(idx+1) for idx in range(cloudscraperConfig['idsAddedWeekly'])]
+        idsToSearch.extend(idsAddedToWebsite)
+
+        idsSearchedThisWeek = irishCarPriceDatabase.selectCarsIrelandIdsDownloaded(
+            databaseConfig, thisWeekStartDate, currentDate + timedelta(days=1))
+        for id in idsSearchedThisWeek:
+            idsToSearch.remove(id)
+
+        numberOfBins = int(len(idsToSearch)/cloudscraperConfig['idBinSize'])
+        for idx in tqdm(range(numberOfBins-1)):
+            startIdx = idx*cloudscraperConfig['idBinSize']
+            endIdx = (idx+1)*cloudscraperConfig['idBinSize']
+            binnedIds = idsToSearch[startIdx:endIdx]
             runCarsIrelandScrapper(
-                subList, cloudscraperConfig, parserConfig, databaseConfig)
-            idSearched.append(subList)
-            with open('dataSourcing/idSearched.txt', 'w') as f:
-                f.write(json.dumps(idSearched))
+                binnedIds, cloudscraperConfig, parserConfig, databaseConfig)
+
+    latestCleanDate = irishCarPriceDatabase.selectLatestCleanDate(
+        databaseConfig)
+    if latestCleanDate is None:
+        latestCleanDate = date(2022, 2, 1)
+
+    if latestCleanDate != currentDate:
+        datesToRunCleaner = [
+            latestCleanDate + timedelta(days=(idx+1)) for idx in range((currentDate-latestCleanDate).days)]
+        for cleanDate in datesToRunCleaner:
+            runCarsIrelandCleaner(cleanDate, databaseConfig)

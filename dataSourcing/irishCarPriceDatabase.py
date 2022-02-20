@@ -67,6 +67,17 @@ def _makeInsertQuery(dataDict, databaseConfig, tableName):
     return query
 
 
+def insertCarsIrelandScraperMetaData(scraperMetaData, databaseConfig):
+    conn = _connectToDatabase(databaseConfig)
+    insertQuery = _makeInsertQuery(
+        scraperMetaData, databaseConfig, 'carsIrelandScraperMetaData')
+    with conn:
+        with conn.cursor() as cursor:
+            cursor.execute(insertQuery)
+            conn.commit()
+        return None
+
+
 def insertCarsIrelandScrappedData(scrappedData, databaseConfig):
     conn = _connectToDatabase(databaseConfig)
     insertQuery = _makeInsertQuery(
@@ -76,35 +87,6 @@ def insertCarsIrelandScrappedData(scrappedData, databaseConfig):
             cursor.execute(insertQuery)
             conn.commit()
         return None
-
-
-def selectCarsIrelandScrappedData(downloadDate, databaseConfig):
-    conn = _connectToDatabase(databaseConfig)
-    with conn:
-        with conn.cursor() as cursor:
-            query = 'SELECT * FROM public."carsIrelandScrappedData" WHERE download_date = \'' + \
-                str(downloadDate)+'\';'
-            cursor.execute(query)
-            queriedData = {}
-            id = None
-            for record in cursor:
-                recordData = {}
-                for valueQueried, (columnName, _) in zip(record, databaseConfig['carsIrelandScrappedData']):
-                    recordData[columnName] = valueQueried
-                    if columnName == 'page_id':
-                        id = valueQueried
-                queriedData[id] = recordData
-            return queriedData
-
-
-def deleteCarsIrelandScrappedData(downloadDate, databaseConfig):
-    conn = _connectToDatabase(databaseConfig)
-    with conn:
-        with conn.cursor() as cursor:
-            query = 'DELETE FROM public."carsIrelandScrappedData" WHERE download_date = \'' + \
-                str(downloadDate)+'\';'
-            cursor.execute(query)
-            return None
 
 
 def insertCarsIrelandCleanData(cleanData, databaseConfig):
@@ -122,12 +104,31 @@ def insertCarsIrelandCleanData(cleanData, databaseConfig):
     return None
 
 
+def selectCarsIrelandScrappedData(downloadDate, databaseConfig):
+    conn = _connectToDatabase(databaseConfig)
+    with conn:
+        with conn.cursor() as cursor:
+            query = 'SELECT * FROM public."carsIrelandScrappedData" WHERE download_date = \'' + \
+                downloadDate.isoformat()+'\';'
+            cursor.execute(query)
+            queriedData = {}
+            id = None
+            for record in cursor:
+                recordData = {}
+                for valueQueried, (columnName, _) in zip(record, databaseConfig['carsIrelandScrappedData']):
+                    recordData[columnName] = valueQueried
+                    if columnName == 'page_id':
+                        id = valueQueried
+                queriedData[id] = recordData
+            return queriedData
+
+
 def selectCarsIrelandCleanData(downloadDate, databaseConfig):
     conn = _connectToDatabase(databaseConfig)
     with conn:
         with conn.cursor() as cursor:
             query = 'SELECT * FROM public."carsIrelandCleanData" WHERE download_date = \'' + \
-                downloadDate+'\';'
+                downloadDate.isoformat()+'\';'
             cursor.execute(query)
             queriedData = {}
             id = None
@@ -150,32 +151,36 @@ def selectCarsIrelandCleanData(downloadDate, databaseConfig):
             return queriedData
 
 
-def deleteCarsIrelandCleanData(downloadDate, databaseConfig):
+def selectCarsIrelandIdsDownloaded(databaseConfig, startDate, endDate):
     conn = _connectToDatabase(databaseConfig)
-    with conn:
-        with conn.cursor() as cursor:
-            query = 'DELETE FROM public."carsIrelandCleanData" WHERE download_date = \'' + \
-                str(downloadDate)+'\';'
-            cursor.execute(query)
-            return None
-
-
-def selectCarsIrelandRecentIds(databaseConfig, startDate, endDate):
-    conn = _connectToDatabase(databaseConfig)
-    query = 'SELECT page_id FROM public."carsIrelandScrappedData" \
+    query = 'SELECT DISTINCT page_id FROM public."carsIrelandScraperMetaData" \
              WHERE page_exists = True \
-             AND script_start_ts BETWEEN \'' + startDate + '\' AND \'' + endDate + '\';'
+             AND script_start_ts BETWEEN \'' + startDate.isoformat() + '\' AND \'' + endDate.isoformat() + '\';'
+    ids = []
     with conn.cursor() as cursor:
-        ids = cursor.execute(query)
+        cursor.execute(query)
+        for id in cursor:
+            ids.append(id)
     return ids
 
 
-def insertCarsIrelandScraperMetaData(scraperMetaData, databaseConfig):
+def selectLatestCleanDate(databaseConfig):
     conn = _connectToDatabase(databaseConfig)
-    insertQuery = _makeInsertQuery(
-        scraperMetaData, databaseConfig, 'carsIrelandScraperMetaData')
-    with conn:
-        with conn.cursor() as cursor:
-            cursor.execute(insertQuery)
-            conn.commit()
-        return None
+    query = 'SELECT MAX(download_date) FROM public."carsIrelandCleanData";'
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        latestDate = cursor.fetchone()
+    if latestDate is not None:
+        return latestDate[0]
+    return None
+
+
+def selectLatestDownloadDate(databaseConfig):
+    conn = _connectToDatabase(databaseConfig)
+    query = 'SELECT MAX(download_date) FROM public."carsIrelandScrappedData";'
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        latestDate = cursor.fetchone()
+    if latestDate is not None:
+        return latestDate[0]
+    return None
