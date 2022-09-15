@@ -152,9 +152,41 @@ def selectCarsIrelandCleanData(downloadDate, databaseConfig):
 
 
 def selectCarsIrelandIdsDownloaded(databaseConfig, startDate, endDate):
+    """
+    returns a list of ID between startData and endDate. If the page does not exist
+    then it's ID is not in the list
+
+    Parameters
+    ----------
+    databaseConfig : dict of tuples
+        stores the databaseconfig
+    startDate : datetime.date()
+        first date of the time period to query the ID
+    endDate : datetime.date()
+        final date of the time period to query the ID
+
+    Returns
+    -------
+    ids : list
+        list of page IDs successfully downloaded
+
+    """
     conn = _connectToDatabase(databaseConfig)
     query = 'SELECT DISTINCT page_id FROM public."carsIrelandScraperMetaData" \
              WHERE page_exists = True \
+             AND script_start_ts BETWEEN \'' + startDate.isoformat() + '\' AND \'' + endDate.isoformat() + '\';'
+    ids = []
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        for id in cursor:
+            ids.append(id)
+    return ids
+
+def selectCarsIrelandIdsFirewalled(databaseConfig, startDate, endDate):
+    conn = _connectToDatabase(databaseConfig)
+    query = 'SELECT DISTINCT page_id FROM public."carsIrelandScraperMetaData" \
+             WHERE hit_firewall = True \
+             AND page_exists = True   \
              AND script_start_ts BETWEEN \'' + startDate.isoformat() + '\' AND \'' + endDate.isoformat() + '\';'
     ids = []
     with conn.cursor() as cursor:
@@ -184,3 +216,26 @@ def selectLatestDownloadDate(databaseConfig):
     if latestDate is not None:
         return latestDate[0]
     return None
+
+def selectFirewalledPages(databaseConfig, startDate, endDate):
+    conn = _connectToDatabase(databaseConfig)
+    query = 'SELECT DISTINCT(page_id) FROM public."carsIrelandScraperMetaData";'
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        latestDate = cursor.fetchone()
+    if latestDate is not None:
+        return latestDate[0]
+    return None
+
+
+def selectDistinctValues(databaseConfig, column):
+    conn = _connectToDatabase(databaseConfig)
+    query = 'SELECT DISTINCT('+column+') FROM public."carsIrelandCleanData";'
+    values = []
+    with conn.cursor() as cursor:
+        cursor.execute(query)
+        for value in cursor:
+            values.append(value[0])
+    return values
+    
+

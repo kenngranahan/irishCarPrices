@@ -1,4 +1,4 @@
-import requests
+
 import rawDataParser
 import dataProcesser
 import irishCarPriceDatabase
@@ -6,7 +6,7 @@ import yaml
 from tqdm import tqdm
 from datetime import datetime, timedelta
 from datetime import date
-import json
+
 import cloudscraper
 import random
 import time
@@ -25,8 +25,7 @@ def runCarsIrelandScrapper(idSearchSpace, cloudscraperConfig, parserConfig, data
     minimumCentisecondsBetweenRequests = cloudscraperConfig['minimumCentisecondsBetweenRequests']
     maximumCentiecondsBetweenRequests = cloudscraperConfig['maximumCentiecondsBetweenRequests']
     timeIncrement = cloudscraperConfig['timeIncrement']
-    rangeOfTimesToWait = range(
-        minimumCentisecondsBetweenRequests, maximumCentiecondsBetweenRequests, timeIncrement)
+    rangeOfTimesToWait = range(minimumCentisecondsBetweenRequests, maximumCentiecondsBetweenRequests, timeIncrement)
 
     browser = random.choice(
         successfulFilters[cloudscraper.__version__])
@@ -40,10 +39,17 @@ def runCarsIrelandScrapper(idSearchSpace, cloudscraperConfig, parserConfig, data
         htmlSrcCode = scraper.get(url).text
         requestEndTS = _getCurrentTimeStamp()
         timeToWaitForNextRequest = random.choice(rangeOfTimesToWait)
+        #timeToWaitForNextRequest = cloudscraperConfig['centisecondsBetweenRequestBins']/cloudscraperConfig['idBinSize']
 
         hitFirewall = False
         pageExists = True
-        if 'Access denied' in htmlSrcCode:
+        if 'You are being rate limited' in htmlSrcCode:
+            print('You are being rate limited')
+            print('Time Between Bins: {}'.format(cloudscraperConfig['centisecondsBetweenRequestBins']))
+            print('Current Page: {}'.format(pageId))
+            print('Request made: {}'.format(requestStartTS))
+            quit()
+        elif 'Access denied' in htmlSrcCode:
             hitFirewall = True
         elif 'Page not found - CarsIreland.ie' in htmlSrcCode:
             pageExists = False
@@ -70,7 +76,7 @@ def runCarsIrelandScrapper(idSearchSpace, cloudscraperConfig, parserConfig, data
                 extractedData['page_id'] = pageId
                 irishCarPriceDatabase.insertCarsIrelandScrappedData(
                     extractedData, databaseConfig)
-        time.sleep(int(timeToWaitForNextRequest/100))
+        time.sleep(timeToWaitForNextRequest/100)
     scraper.close()
 
 
@@ -89,11 +95,11 @@ if __name__ == '__main__':
     cloudscraperConfig = None
     parserConfig = None
     databaseConfig = None
-    with open('dataSourcing/configs/parserConfig.yaml', 'r') as f:
+    with open('configs/parserConfig.yaml', 'r') as f:
         parserConfig = yaml.full_load(f)
-    with open('dataSourcing/configs/databaseConfig.yaml', 'r') as f:
+    with open('configs/databaseConfig.yaml', 'r') as f:
         databaseConfig = yaml.full_load(f)
-    with open('dataSourcing/configs/cloudscraperConfig.yaml', 'r') as f:
+    with open('configs/cloudscraperConfig.yaml', 'r') as f:
         cloudscraperConfig = yaml.full_load(f)
 
     # Weeks are assumed to start on Monday and end on Sunday
@@ -104,25 +110,37 @@ if __name__ == '__main__':
     lastWeekStartDate = currentDate - timedelta(days=(7+currentDate.weekday()))
     lastWeekEndDate = currentDate - timedelta(days=(1+currentDate.weekday()))
 
-    idsToSearch = irishCarPriceDatabase.selectCarsIrelandIdsDownloaded(
-        databaseConfig, lastWeekStartDate, lastWeekEndDate + timedelta(days=1))
-    if idsToSearch != []:
-        idsAddedToWebsite = [
-            max(idsToSearch)+(idx+1) for idx in range(cloudscraperConfig['idsAddedWeekly'])]
-        idsToSearch.extend(idsAddedToWebsite)
-
-        idsSearchedThisWeek = irishCarPriceDatabase.selectCarsIrelandIdsDownloaded(
-            databaseConfig, thisWeekStartDate, currentDate + timedelta(days=1))
-        for id in idsSearchedThisWeek:
-            idsToSearch.remove(id)
-
-        numberOfBins = int(len(idsToSearch)/cloudscraperConfig['idBinSize'])
-        for idx in tqdm(range(numberOfBins-1)):
-            startIdx = idx*cloudscraperConfig['idBinSize']
-            endIdx = (idx+1)*cloudscraperConfig['idBinSize']
-            binnedIds = idsToSearch[startIdx:endIdx]
-            runCarsIrelandScrapper(
-                binnedIds, cloudscraperConfig, parserConfig, databaseConfig)
+    if False:
+        idsToSearch = irishCarPriceDatabase.selectCarsIrelandIdsDownloaded(
+            databaseConfig, lastWeekStartDate, lastWeekEndDate + timedelta(days=1))
+        if idsToSearch != []:
+            idsAddedToWebsite = [
+                max(idsToSearch)+(idx+1) for idx in range(cloudscraperConfig['idsAddedWeekly'])]
+            idsToSearch.extend(idsAddedToWebsite)
+    
+            idsSearchedThisWeek = irishCarPriceDatabase.selectCarsIrelandIdsDownloaded(
+                databaseConfig, thisWeekStartDate, currentDate + timedelta(days=1))
+            for id in idsSearchedThisWeek:
+                idsToSearch.remove(id)
+    
+            numberOfBins = int(len(idsToSearch)/cloudscraperConfig['idBinSize'])
+            for idx in tqdm(range(numberOfBins-1)):
+                startIdx = idx*cloudscraperConfig['idBinSize']
+                endIdx = (idx+1)*cloudscraperConfig['idBinSize']
+                binnedIds = idsToSearch[startIdx:endIdx]
+                runCarsIrelandScrapper(
+                    binnedIds, cloudscraperConfig, parserConfig, databaseConfig)
+                
+    idsToSearch = [x for x in range(3149748, 3169856)]
+    numberOfBins = int(len(idsToSearch)/cloudscraperConfig['idBinSize'])
+    #timeBetweenBins = cloudscraperConfig['centisecondsBetweenRequestBins']
+    for idx in tqdm(range(numberOfBins-1)):
+        startIdx = idx*cloudscraperConfig['idBinSize']
+        endIdx = (idx+1)*cloudscraperConfig['idBinSize']
+        binnedIds = idsToSearch[startIdx:endIdx]
+        runCarsIrelandScrapper(
+            binnedIds, cloudscraperConfig, parserConfig, databaseConfig)
+        #time.sleep(timeBetweenBins/100)
 
     latestCleanDate = irishCarPriceDatabase.selectLatestCleanDate(
         databaseConfig)

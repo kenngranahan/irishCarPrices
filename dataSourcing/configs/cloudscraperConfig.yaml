@@ -1,6 +1,7 @@
-minimumCentisecondsBetweenRequests: 50
-maximumCentiecondsBetweenRequests: 400
+minimumCentisecondsBetweenRequests: 100
+maximumCentiecondsBetweenRequests: 101
 timeIncrement: 1
+centisecondsBetweenRequestBins: 50
 idsAddedWeekly: 7000
 idBinSize: 10
 successfulFilters:
