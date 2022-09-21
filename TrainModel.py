@@ -118,25 +118,38 @@ def fillna(carData, CFG):
     -------
     carData : DataFrame
         Returns the dataset passed but with missing values filled
+        
+    fillValues : DataFrame
+        The values used to fill the missing data
 
     """
-    medianModelData = carData.groupby(by='model')[CFG['numFeatures']].median()
+
+    medianModelData = carData.groupby(by=['make','model'])[CFG['numFeatures']].median()
     medianMakeData = carData.groupby(by='make')[CFG['numFeatures']].median()
     medianData = carData[CFG['numFeatures']].median()
     
-    carData=carData.merge(medianModelData[CFG['numFeatures']], how='left', left_on='make', right_index=True)
+    carData=carData.merge(medianModelData[CFG['numFeatures']], how='left', 
+                          left_on=['make', 'model'], right_index=True)
+    
     for feature in CFG['numFeatures']:
         carData[feature] =  carData[feature+'_x'].fillna(carData[feature+'_y'])
         carData.drop(labels = [feature+'_x', feature+'_y'], axis=1, inplace=True)
-        
-    carData=carData.merge(medianMakeData[CFG['numFeatures']], how='left', left_on='make', right_index=True)
+
+    carData=carData.merge(medianMakeData[CFG['numFeatures']], how='left', 
+                          left_on='make', right_index=True)
     for feature in CFG['numFeatures']:
         carData[feature] =  carData[feature+'_x'].fillna(carData[feature+'_y'])
         carData.drop(labels = [feature+'_x', feature+'_y'], axis=1, inplace=True)    
-        
+
     carData.fillna(medianData, inplace=True)
+
+    fillValues = medianModelData.reset_index().copy()
+    fillValues = pd.concat([fillValues, medianMakeData.reset_index()])
     
-    return carData
+    medianData = pd.DataFrame(data = [medianData.values], columns=medianData.index)
+    fillValues = pd.concat([fillValues, medianData])
+        
+    return carData, fillValues
 
 
 def removeMileageOutlier(X, std, CFG):
@@ -446,7 +459,7 @@ def testModel(X_test, Y_test, trainResults, CFG):
             
 
         
-def writeToDisk(trainResults, testResults, CFG):
+def writeToDisk(trainResults, testResults, CFG, fillValues = None):
     """
     
 
@@ -458,6 +471,8 @@ def writeToDisk(trainResults, testResults, CFG):
         during training and OneHotEncoder() is the encoder fitted during training
     testResults : DataFrame
         Contains the true and predicted value of each sample along with the score of the dataset.
+    fillValues : DataFrame(optional)
+        The values used to fill missing values in the data set
     CFG : dict
         dictionary containing the configuration for this fit.
 
@@ -481,21 +496,26 @@ def writeToDisk(trainResults, testResults, CFG):
     
     
     cvResults = pd.DataFrame()
-    pipe, coeff, _ = trainResults
-    gridSearch = pipe.named_steps['estimator']
+    pipe, coeff, enc = trainResults
     pathToDump = pathToWrite.joinpath('estimator.joblib')
-    dump(gridSearch, str(pathToDump))
+    dump(pipe, str(pathToDump))
     
+    pathToDump = pathToWrite.joinpath('encoder.joblib')
+    dump(enc, str(pathToDump))
+    
+    gridSearch = pipe.named_steps['estimator']
     gridSearchCv = pd.DataFrame(gridSearch.cv_results_)
     if len(cvResults)==0:
         cvResults = gridSearchCv.copy()
     else:
         cvResults = pd.concat([cvResults, gridSearchCv])
                 
-    cvResults.to_csv(str(pathToWrite.joinpath('CV.csv')))
+    cvResults.to_csv(str(pathToWrite.joinpath('CV.csv')), index=False)
     testResults.to_csv(str(pathToWrite.joinpath('testResults.csv')))
     if CFG['outputRegressorCoeff']:
-        coeff.to_csv(str(pathToWrite.joinpath('regressorCoeff.csv')))
+        coeff.to_csv(str(pathToWrite.joinpath('regressorCoeff.csv')), index=False)
+    if fillValues is not None:
+        fillValues.to_csv(str(pathToWrite.joinpath('fillValues.csv')), index=False)
 
 
 carData = pd.read_csv(CFG['inputCsv'])
@@ -531,7 +551,7 @@ carData['nct_remaining'] = carData['nct_remaining'].where(~(carData['nct_year'].
 carData['make_and_model'] = carData['make']+' '+carData['model']
 makes = getDistinctMakes(carData)
 
-carData = fillna(carData=carData,CFG=CFG)
+carData, fillValues = fillna(carData=carData,CFG=CFG)
 
 
 databaseConfig = None
@@ -572,4 +592,4 @@ for alpha in tqdm(CFG['alpha']):
         alltestResults = testResults.copy()
     else:
         alltestResults = pd.concat([alltestResults, testResults])
-writeToDisk(trainResults=trainResults, testResults=alltestResults, CFG=CFG)
+writeToDisk(trainResults=trainResults, testResults=alltestResults, fillValues=fillValues, CFG=CFG)
