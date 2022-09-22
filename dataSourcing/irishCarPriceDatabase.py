@@ -178,8 +178,8 @@ def selectCarsIrelandIdsDownloaded(databaseConfig, startDate, endDate):
     ids = []
     with conn.cursor() as cursor:
         cursor.execute(query)
-        for id in cursor:
-            ids.append(id)
+        for id_, in cursor:
+            ids.append(id_)
     return ids
 
 def selectCarsIrelandIdsFirewalled(databaseConfig, startDate, endDate):
@@ -191,8 +191,8 @@ def selectCarsIrelandIdsFirewalled(databaseConfig, startDate, endDate):
     ids = []
     with conn.cursor() as cursor:
         cursor.execute(query)
-        for id in cursor:
-            ids.append(id)
+        for id_, in cursor:
+            ids.append(id_)
     return ids
 
 

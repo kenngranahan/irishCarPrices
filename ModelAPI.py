@@ -159,7 +159,7 @@ class carPricePredictor:
             try:
                 X = X.astype({column: self._expectedColumns[column]})
             except:
-                raise TypeError('Failed to cast {} as type {}'.format(column, self._expectedColumns[column]))
+                raise ValueError('Failed to cast {} as type {}'.format(column, self._expectedColumns[column]))
                 
         for month in X['nct_month'].unique():
             if month not in self._monthMapping:
@@ -198,7 +198,7 @@ class carPricePredictor:
         X = self._fillMissingValue(X)
         X = self._getRegressorCoeff(X)
         
-        encodedData = self._enc.fit_transform(X[self._CFG['catFeatures']])
+        encodedData = self._enc.transform(X[self._CFG['catFeatures']])
         encodedFeatures = ['encoded_'+str(x) for x in range(len(encodedData[0]))]
         encodedData = pd.DataFrame(data=encodedData, 
                                    columns = encodedFeatures, 
@@ -210,7 +210,11 @@ class carPricePredictor:
         X = X[self._CFG['numFeatures']+regressorColumns+encodedFeatures]
         Y = self._model.predict(X)
         Y = pd.Series(data=Y, index=X.index)
+        
+        # The model was trained on log(price) so we need to apply exp() 
+        # to the model output to determine the price 
         Y = Y.apply(exp)
+        
         return Y
 
  

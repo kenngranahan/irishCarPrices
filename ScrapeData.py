@@ -1,9 +1,9 @@
 
-import rawDataParser
-import dataProcesser
-import irishCarPriceDatabase
+from dataSourcing import irishCarPriceDatabase,dataProcesser,rawDataParser
 import yaml
 from tqdm import tqdm
+from pathlib import Path
+
 from datetime import datetime, timedelta
 from datetime import date
 
@@ -95,11 +95,15 @@ if __name__ == '__main__':
     cloudscraperConfig = None
     parserConfig = None
     databaseConfig = None
-    with open('configs/parserConfig.yaml', 'r') as f:
+    
+    cwd = Path().cwd()
+    configPath = cwd.joinpath('dataSourcing/configs')
+    
+    with configPath.joinpath('parserConfig.yaml').open() as f:
         parserConfig = yaml.full_load(f)
-    with open('configs/databaseConfig.yaml', 'r') as f:
+    with configPath.joinpath('databaseConfig.yaml').open() as f:
         databaseConfig = yaml.full_load(f)
-    with open('configs/cloudscraperConfig.yaml', 'r') as f:
+    with configPath.joinpath('cloudscraperConfig.yaml').open() as f:
         cloudscraperConfig = yaml.full_load(f)
 
     # Weeks are assumed to start on Monday and end on Sunday
@@ -110,28 +114,27 @@ if __name__ == '__main__':
     lastWeekStartDate = currentDate - timedelta(days=(7+currentDate.weekday()))
     lastWeekEndDate = currentDate - timedelta(days=(1+currentDate.weekday()))
 
-    if False:
-        idsToSearch = irishCarPriceDatabase.selectCarsIrelandIdsDownloaded(
-            databaseConfig, lastWeekStartDate, lastWeekEndDate + timedelta(days=1))
-        if idsToSearch != []:
-            idsAddedToWebsite = [
-                max(idsToSearch)+(idx+1) for idx in range(cloudscraperConfig['idsAddedWeekly'])]
-            idsToSearch.extend(idsAddedToWebsite)
-    
-            idsSearchedThisWeek = irishCarPriceDatabase.selectCarsIrelandIdsDownloaded(
-                databaseConfig, thisWeekStartDate, currentDate + timedelta(days=1))
-            for id in idsSearchedThisWeek:
-                idsToSearch.remove(id)
-    
-            numberOfBins = int(len(idsToSearch)/cloudscraperConfig['idBinSize'])
-            for idx in tqdm(range(numberOfBins-1)):
-                startIdx = idx*cloudscraperConfig['idBinSize']
-                endIdx = (idx+1)*cloudscraperConfig['idBinSize']
-                binnedIds = idsToSearch[startIdx:endIdx]
-                runCarsIrelandScrapper(
-                    binnedIds, cloudscraperConfig, parserConfig, databaseConfig)
-                
-    idsToSearch = [x for x in range(3149748, 3169856)]
+    startSearch= date(2022, 9, 1)
+    idsToSearch = irishCarPriceDatabase.selectCarsIrelandIdsDownloaded(
+        databaseConfig, startSearch, lastWeekEndDate + timedelta(days=1))
+    if idsToSearch != []:
+        idsAddedToWebsite = [
+            int(max(idsToSearch))+idx+1 for idx in range(cloudscraperConfig['idsAddedWeekly'])]
+        idsToSearch.extend(idsAddedToWebsite)
+
+        idsSearchedThisWeek = irishCarPriceDatabase.selectCarsIrelandIdsDownloaded(
+            databaseConfig, thisWeekStartDate, currentDate + timedelta(days=1))
+        for id in idsSearchedThisWeek:
+            idsToSearch.remove(id)
+
+        numberOfBins = int(len(idsToSearch)/cloudscraperConfig['idBinSize'])
+        for idx in tqdm(range(numberOfBins-1)):
+            startIdx = idx*cloudscraperConfig['idBinSize']
+            endIdx = (idx+1)*cloudscraperConfig['idBinSize']
+            binnedIds = idsToSearch[startIdx:endIdx]
+            runCarsIrelandScrapper(
+                binnedIds, cloudscraperConfig, parserConfig, databaseConfig)
+            
     numberOfBins = int(len(idsToSearch)/cloudscraperConfig['idBinSize'])
     #timeBetweenBins = cloudscraperConfig['centisecondsBetweenRequestBins']
     for idx in tqdm(range(numberOfBins-1)):
