@@ -11,7 +11,7 @@ Aggregate second hand car prices in the Irish Market
    It should be possible to run the GUI also, but user inputs are not checked by the GUI
    
 
-ONLY STEP 2 AND 3 WERE DESGINED WITH PORTABLITY IN MIND. RUNNING THE SCRAPPER FROM THIS REPOSITORY WILL REQUIRE INSTALLING POSTGRESQL ON THE SAME MACHINE
+ONLY STEP 2 AND 3 WERE DESIGNNED WITH PORTABLITY IN MIND. RUNNING THE SCRAPPER FROM THIS REPOSITORY WILL REQUIRE INSTALLING POSTGRESQL ON THE SAME MACHINE
 
 ### Step 1: Database and Scraper set up
 #### Setting up the Database for the scraper
