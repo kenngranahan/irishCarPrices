@@ -1,7 +1,7 @@
 DSN:
   dbname: irishCarPrices
   user: 'postgres'
-  password: 'Ju$tK1dd1ng'
+  password: 'password'
   host: '127.0.0.1'
   port: '5432'
   connect_timeout: 5
